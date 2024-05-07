@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io"
 	"math"
 	"net/http"
@@ -31,8 +32,28 @@ func init() {
 	}
 }
 
-// adding this comment literally just to test the release pushing
 func main() {
+	// on each run, decide if it's the first run by checking for the stored key. No stored key means first run
+	// on first run, prompt for tomorrow.io api key
+	// get the key, test it, on valid key, store it somehow locally
+	// then on this, and subsequent runs, retreive the key and os.Setenv()
+	// now the rest of the app can function with an api key that the user is responsible for
+
+	// if first run only
+	log.Print("Please enter your tomorrow.io api key..")
+	var userKey string
+	fmt.Scanln(&userKey)
+
+	// this isn't workig, use creatfile, open it, defer, write to a text file, then figure out opening
+	err := os.WriteFile("tmp/secret", []byte(userKey), 0o644)
+	if err != nil {
+		log.Warnf("error writing api key - %v", err.Error())
+	}
+
+	log.Warnf("key entered: %v", userKey)
+	os.Setenv("TOMORROW_API_KEY_2", userKey)
+
+	// the rest of the app
 	day := flag.String("day", "today", "What day's weather do you want to see?")
 	flag.Parse()
 
@@ -46,7 +67,7 @@ func main() {
 }
 
 func getWeather() {
-	apiKey := os.Getenv("TOMORROW_API_KEY")
+	apiKey := os.Getenv("TOMORROW_API_KEY_2")
 	url := "https://api.tomorrow.io/v4/weather/realtime?location=64109&apikey=" + apiKey
 
 	req, _ := http.NewRequest("GET", url, nil)

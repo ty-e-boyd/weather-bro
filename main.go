@@ -31,6 +31,7 @@ func init() {
 	}
 }
 
+// adding this comment literally just to test the release pushing
 func main() {
 	day := flag.String("day", "today", "What day's weather do you want to see?")
 	flag.Parse()

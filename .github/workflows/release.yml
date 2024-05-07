@@ -26,3 +26,4 @@ jobs:
           args: release --rm-dist
         env:
           GITHUB_TOKEN: ${{ secrets.PUBLISHER_TOKEN }}
+          TOMORROW_API_KEY: ${{ secrets.TOMORROW_API_KEY }}

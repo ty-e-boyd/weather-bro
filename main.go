@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/log"
-	"github.com/joho/godotenv"
 )
 
 type WeatherValues struct {
@@ -26,20 +25,7 @@ type WeatherRes struct {
 	Data WeatherData `json:"data"`
 }
 
-func init() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading env file")
-	}
-}
-
 func main() {
-	// on each run, decide if it's the first run by checking for the stored key. No stored key means first run
-	// on first run, prompt for tomorrow.io api key
-	// get the key, test it, on valid key, store it somehow locally
-	// then on this, and subsequent runs, retreive the key and os.Setenv()
-	// now the rest of the app can function with an api key that the user is responsible for
-
 	rf, err := os.ReadFile("secret.txt")
 	if err != nil {
 		log.Fatalf("error reading file - %v", err.Error())

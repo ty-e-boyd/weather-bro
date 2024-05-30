@@ -8,6 +8,7 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/charmbracelet/log"
 	"github.com/joho/godotenv"
@@ -39,19 +40,44 @@ func main() {
 	// then on this, and subsequent runs, retreive the key and os.Setenv()
 	// now the rest of the app can function with an api key that the user is responsible for
 
-	// if first run only
-	log.Print("Please enter your tomorrow.io api key..")
-	var userKey string
-	fmt.Scanln(&userKey)
-
-	// this isn't workig, use creatfile, open it, defer, write to a text file, then figure out opening
-	err := os.WriteFile("tmp/secret", []byte(userKey), 0o644)
+	rf, err := os.ReadFile("secret.txt")
 	if err != nil {
-		log.Warnf("error writing api key - %v", err.Error())
+		log.Fatalf("error reading file - %v", err.Error())
 	}
 
-	log.Warnf("key entered: %v", userKey)
-	os.Setenv("TOMORROW_API_KEY_2", userKey)
+	var foundKey string
+	lines := strings.Split(string(rf), "\n")
+	for i, line := range lines {
+		if i == 0 {
+			fmt.Println(line)
+			foundKey = line
+		}
+	}
+
+	if len(foundKey) > 0 {
+		os.Setenv("TOMORROW_API_KEY", foundKey)
+	} else {
+		// if first run only
+		var userKey string
+		log.Print("Please enter your tomorrow.io api key..")
+		fmt.Scanln(&userKey)
+
+		// write key to local file
+		f, err := os.Create("secret.txt")
+		if err != nil {
+			log.Fatalf("error creating file - %v", err.Error())
+		}
+		defer f.Close()
+
+		wf, err := f.WriteString(userKey)
+		if err != nil {
+			log.Fatalf("error writing to file - %v", err.Error())
+		}
+		log.Warnf("wrote bytes: %v", wf)
+
+		log.Warnf("key entered: %v", userKey)
+		os.Setenv("TOMORROW_API_KEY", userKey)
+	}
 
 	// the rest of the app
 	day := flag.String("day", "today", "What day's weather do you want to see?")
@@ -67,18 +93,24 @@ func main() {
 }
 
 func getWeather() {
-	apiKey := os.Getenv("TOMORROW_API_KEY_2")
+	apiKey := os.Getenv("TOMORROW_API_KEY")
 	url := "https://api.tomorrow.io/v4/weather/realtime?location=64109&apikey=" + apiKey
 
-	req, _ := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Fatalf("error creating new request - %v", err.Error())
+	}
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Fatalf("error in api call - %v", err.Error())
 	}
-
 	defer res.Body.Close()
-	body, _ := io.ReadAll(res.Body)
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		log.Fatalf("error reading body from api call - %v", err.Error())
+	}
 
 	var w WeatherRes
 	err = json.Unmarshal(body, &w)
